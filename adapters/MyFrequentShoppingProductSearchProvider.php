@@ -258,19 +258,5 @@ class MyFrequentShoppingProductSearchProvider implements ProductSearchProviderIn
 		Product::cacheFrontFeatures($products_ids, $idLang);
 
 		return Product::getProductsProperties((int) $idLang, $result);
-
-		echo ($sql);
-
-		$result = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
-
-		if ($finalOrderBy == 'price') {
-			Tools::orderbyPrice($result, $orderWay);
-			$result = array_slice($result, (int) (($pageNumber - 1) * $nbProducts), (int) $nbProducts);
-		}
-		if (!$result) {
-			return false;
-		}
-
-		return Product::getProductsProperties($idLang, $result);
 	}
 }
