@@ -20,7 +20,8 @@
 *}
 
 {extends file='catalog/listing/product-list.tpl'}
+
 {block name='product_list_header'}
     {$smarty.block.parent}
-    <p>{l s='You will find on this page the products that you have ordered most often' mod='myfavoritesproduct'}</p>
+    <p>{l s='You will find on this page the products that you have ordered most often' mod='myfrequentshopping'}</p>
 {/block}
