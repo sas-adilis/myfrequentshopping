@@ -1,5 +1,4 @@
 <?php
-
 /**
  * 2021 Adilis
  *
@@ -20,6 +19,9 @@
  * @author   Achard Julien <contact@adilis.fr>
  * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
+
+use PrestaShop\PrestaShop\Core\Product\Search\ProductSearchQuery;
+use PrestaShop\PrestaShop\Core\Product\Search\SortOrder;
 
 class MyFrequentShoppingViewModuleFrontController extends ProductListingFrontControllerCore
 {

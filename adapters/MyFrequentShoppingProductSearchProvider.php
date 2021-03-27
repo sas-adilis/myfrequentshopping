@@ -1,5 +1,4 @@
 <?php
-
 /**
  * 2021 Adilis
  *
@@ -66,18 +65,23 @@ class MyFrequentShoppingProductSearchProvider implements ProductSearchProviderIn
             $query->setSortOrder($sortBySales);
         }
 
-        if (!$products = self::getBestSales(
+        $products = self::getBestSales(
             $context->getIdLang(),
-            $query->getPage(),
+			$context->getIdCustomer(),
+			$query->getPage(),
             $query->getResultsPerPage(),
             false,
             $query->getSortOrder()->toLegacyOrderBy(),
             $query->getSortOrder()->toLegacyOrderWay()
-        )) {
-            $products = array();
-        }
+        );
 
-        $count = (int) ProductSale::getNbSales();
+        $count = (int)self::getBestSales(
+			$context->getIdLang(),
+			$context->getIdCustomer(),
+			$query->getPage(),
+			$query->getResultsPerPage(),
+			true
+		);
 
         $result = new ProductSearchResult();
 
@@ -121,7 +125,7 @@ class MyFrequentShoppingProductSearchProvider implements ProductSearchProviderIn
 	 *                    `false` if failure
 	 * @throws PrestaShopDatabaseException
 	 */
-	public static function getBestSales($idLang,  $pageNumber = 0, $nbProducts = 10, $count = false, $orderBy = null, $orderWay = null)
+	public static function getBestSales($idLang, $idCustomer, $pageNumber = 0, $nbProducts = 10, $count = false, $orderBy = null, $orderWay = null)
 	{
 		$context = Context::getContext();
 		if ($pageNumber < 1) {
@@ -146,19 +150,16 @@ class MyFrequentShoppingProductSearchProvider implements ProductSearchProviderIn
 			$orderWay = 'DESC';
 		}
 
-
 		/* Minimum query for count */
 		$sql = new DbQuery();
 		$sql->from('order_detail', 'od');
 		$sql->innerJoin('orders', 'o', 'od.id_order = o.id_order');
-		$sql->groupBy('od.product_id');
 		$sql->leftJoin('product', 'p', 'od.product_id = p.id_product');
 		$sql->join(Shop::addSqlAssociation('product', 'p'));
 		$sql->where('product_shop.`active` = 1');
 		$sql->where('product_shop.`visibility` IN ("both", "catalog")');
-		$sql->where('o.`id_customer` = '.(int)$context->customer->id );
+		$sql->where('o.`id_customer` = '.(int)$idCustomer );
 		$sql->where('o.`valid` = 1' );
-		$sql->groupBy('od.product_id');
 
 		if (Group::isFeatureActive()) {
 			$groups = FrontController::getCurrentCustomerGroups();
@@ -178,8 +179,8 @@ class MyFrequentShoppingProductSearchProvider implements ProductSearchProviderIn
 		}
 
 		if ($count) {
-			$sql->select('COUNT(p.`id_product`) AS nb');
-			return (int) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+			$sql->select('COUNT(DISTINCT(p.`id_product`))');
+			return (int)Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
 		}
 
 
@@ -240,11 +241,11 @@ class MyFrequentShoppingProductSearchProvider implements ProductSearchProviderIn
 
 		$sql->orderBy((isset($orderByPrefix) ? pSQL($orderByPrefix) . '.' : '') . '`' . pSQL($orderBy) . '` ' . pSQL($orderWay));
 		$sql->limit($nbProducts, (int)(($pageNumber - 1) * $nbProducts));
+		$sql->groupBy('od.product_id');
 
 		$result = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
-
 		if (!$result) {
-			return false;
+			return array();
 		}
 
 		if ($orderBy == 'price') {
@@ -256,7 +257,6 @@ class MyFrequentShoppingProductSearchProvider implements ProductSearchProviderIn
 		}
 		// Thus you can avoid one query per product, because there will be only one query for all the products of the cart
 		Product::cacheFrontFeatures($products_ids, $idLang);
-
-		return Product::getProductsProperties((int) $idLang, $result);
+		return Product::getProductsProperties((int)$idLang, $result);
 	}
 }
